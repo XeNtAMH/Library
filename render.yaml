@@ -14,9 +14,8 @@ services:
     region: ohio
     rootDir: backend
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate
-    startCommand: gunicorn biblio.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120
+    startCommand: python manage.py bootstrap_admin && gunicorn biblio.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120
     healthCheckPath: /api/books/
-    initialDeployHook: python manage.py createsuperuser --noinput
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.4

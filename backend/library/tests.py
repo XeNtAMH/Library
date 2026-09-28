@@ -1,12 +1,71 @@
 from datetime import date
+from io import StringIO
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command, CommandError
 from django.test import TestCase
 from rest_framework.test import APIClient
 
 from .models import Book, LibraryProfile, Loan
 
 User = get_user_model()
+
+
+class AdminBootstrapCommandTests(TestCase):
+    @patch.dict("os.environ", {
+        "DJANGO_SUPERUSER_USERNAME": "library-admin",
+        "DJANGO_SUPERUSER_EMAIL": "admin@example.com",
+    }, clear=True)
+    def test_bootstrap_is_disabled_when_password_secret_is_removed(self):
+        call_command("bootstrap_admin", stdout=StringIO())
+        self.assertFalse(User.objects.filter(username="library-admin").exists())
+
+    @patch.dict("os.environ", {
+        "DJANGO_SUPERUSER_USERNAME": "library-admin",
+        "DJANGO_SUPERUSER_EMAIL": "admin@example.com",
+        "DJANGO_SUPERUSER_PASSWORD": "Long-test-password-219!",
+    })
+    def test_bootstrap_creates_superuser_with_working_password_and_admin_profile(self):
+        call_command("bootstrap_admin", stdout=StringIO())
+
+        admin = User.objects.get(username="library-admin")
+        self.assertTrue(admin.is_superuser)
+        self.assertTrue(admin.is_staff)
+        self.assertTrue(admin.check_password("Long-test-password-219!"))
+        self.assertEqual(admin.library_profile.role, LibraryProfile.Role.ADMIN)
+
+    @patch.dict("os.environ", {
+        "DJANGO_SUPERUSER_USERNAME": "library-admin",
+        "DJANGO_SUPERUSER_EMAIL": "admin@example.com",
+        "DJANGO_SUPERUSER_PASSWORD": "Updated-test-password-219!",
+    })
+    def test_bootstrap_repairs_existing_superuser_password(self):
+        admin = User.objects.create_superuser(username="library-admin", password="old-password")
+        LibraryProfile.objects.create(user=admin)
+
+        call_command("bootstrap_admin", stdout=StringIO())
+
+        admin.refresh_from_db()
+        self.assertTrue(admin.check_password("Updated-test-password-219!"))
+        self.assertTrue(admin.is_superuser)
+        self.assertEqual(admin.library_profile.role, LibraryProfile.Role.ADMIN)
+
+    @patch.dict("os.environ", {
+        "DJANGO_SUPERUSER_USERNAME": "reader",
+        "DJANGO_SUPERUSER_EMAIL": "reader@example.com",
+        "DJANGO_SUPERUSER_PASSWORD": "Long-test-password-219!",
+    })
+    def test_bootstrap_refuses_to_promote_an_existing_reader(self):
+        reader = User.objects.create_user(username="reader", password="reader-password")
+        LibraryProfile.objects.create(user=reader)
+
+        with self.assertRaises(CommandError):
+            call_command("bootstrap_admin", stdout=StringIO())
+
+        reader.refresh_from_db()
+        self.assertFalse(reader.is_staff)
+        self.assertFalse(reader.is_superuser)
 
 
 class LibraryWorkflowTests(TestCase):

@@ -41,9 +41,9 @@ Los permisos se validan en Django, no dependen de los controles visibles del fro
 
 ## Desplegar en Render
 
-El archivo `render.yaml` define la API Django, el sitio estático Vite y PostgreSQL. Fija Python 3.13.4 y Node 22.22.0; instala dependencias, recoge los estáticos y aplica migraciones durante el build, porque Render Free no dispone de comando pre-deploy. Como los últimos cambios aún no están en GitHub, primero súbelos a la rama `main`; luego, en Render, selecciona **New > Blueprint**, conecta `XeNtAMH/Library` y aplica el Blueprint.
+El archivo `render.yaml` define la API Django, el sitio estático Vite y PostgreSQL. Fija Python 3.13.4 y Node 22.22.0; instala dependencias, recoge los estáticos y aplica migraciones durante el build, porque Render Free no dispone de comando pre-deploy. Primero publica los cambios de `main` en GitHub; Render desplegará el nuevo commit automáticamente.
 
-Render solicitará valores para `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL` y `DJANGO_SUPERUSER_PASSWORD`. Define credenciales iniciales seguras: el hook las usa una sola vez para crear la cuenta administradora. Cuando el primer despliegue termine y confirme que el admin se creó, elimina esas tres variables desde el servicio de Render. El acceso administrativo estará en `/admin/` del servicio API.
+El servicio de API ejecuta `bootstrap_admin` al iniciar. Define `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL` y `DJANGO_SUPERUSER_PASSWORD` en **Environment** del servicio `el-buen-viaje-api`; el comando crea el superusuario o repara su contraseña y perfil admin. Se puede volver a ejecutar para recuperar el acceso. Si el nombre ya pertenece a una cuenta lectora, el despliegue falla por seguridad: elige otro nombre de usuario para el superadmin. Inicia sesión con el **nombre de usuario** (no el email) en `https://el-buen-viaje-api.onrender.com/admin/`. Después de confirmar el acceso, elimina `DJANGO_SUPERUSER_PASSWORD` de Environment y vuelve a desplegar; la cuenta seguirá funcionando.
 
 El frontend se compila como Static Site y apunta a `https://el-buen-viaje-api.onrender.com/api`. Si Render asigna un hostname diferente, actualiza `VITE_API_BASE_URL` en el sitio estático y los valores CORS/hosts del servicio API, y vuelve a desplegar el frontend.
 
