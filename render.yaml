@@ -1,0 +1,78 @@
+databases:
+  - name: el-buen-viaje-db
+    databaseName: el_buen_viaje
+    user: el_buen_viaje
+    plan: free
+    region: ohio
+    postgresMajorVersion: "17"
+
+services:
+  - type: web
+    name: el-buen-viaje-api
+    runtime: python
+    plan: free
+    region: ohio
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate
+    startCommand: gunicorn biblio.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120
+    healthCheckPath: /api/books/
+    initialDeployHook: python manage.py createsuperuser --noinput
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.4
+      - key: DATABASE_URL
+        fromDatabase:
+          name: el-buen-viaje-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: el-buen-viaje-api.onrender.com
+      - key: DJANGO_CORS_ALLOWED_ORIGINS
+        value: https://el-buen-viaje-web.onrender.com
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        value: https://el-buen-viaje-api.onrender.com,https://el-buen-viaje-web.onrender.com
+      - key: DJANGO_TRUST_PROXY_SSL
+        value: "True"
+      - key: DJANGO_SECURE_SSL_REDIRECT
+        value: "True"
+      - key: DJANGO_SESSION_COOKIE_SECURE
+        value: "True"
+      - key: DJANGO_CSRF_COOKIE_SECURE
+        value: "True"
+      - key: DJANGO_SECURE_HSTS_SECONDS
+        value: "31536000"
+      - key: DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS
+        value: "True"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+
+  - type: web
+    name: el-buen-viaje-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: VITE_API_BASE_URL
+        value: https://el-buen-viaje-api.onrender.com/api
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin

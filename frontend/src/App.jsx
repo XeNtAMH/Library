@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useMemo, useState } from 'react'
 import './App.css'
 
-const API = 'http://127.0.0.1:8000/api'
+const API = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api'
 const samples = [
   { id: 1, title: 'La casa de los espíritus', author: 'Isabel Allende', genres: ['Novela', 'Realismo mágico'], cover_url: 'https://covers.openlibrary.org/b/isbn/9780553383805-L.jpg', physical_stock: 4, is_virtual: true, rental_price: '8.00' },
   { id: 2, title: 'Cien años de soledad', author: 'Gabriel García Márquez', genres: ['Novela', 'Clásico'], cover_url: 'https://covers.openlibrary.org/b/isbn/9788437604947-L.jpg', physical_stock: 2, is_virtual: true, rental_price: '7.00' },
