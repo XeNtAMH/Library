@@ -1,4 +1,4 @@
-# Atenea · Biblioteca
+# El Buen Viaje · Biblioteca
 
 Aplicación web con React/Vite y API Django REST Framework. Incluye catálogo, usuarios con CI y teléfono, préstamos físicos, solicitudes de edición digital, gestión de inventario y roles `admin`, `librarian` y `member`.
 
